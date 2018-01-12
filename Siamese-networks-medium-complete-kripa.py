@@ -1,4 +1,3 @@
-
 # coding: utf-8
 
 # # One Shot Learning with Siamese Networks
@@ -10,7 +9,7 @@
 
 # In[1]:
 
-get_ipython().magic(u'matplotlib inline')
+#get_ipython().magic(u'matplotlib inline')
 import torchvision
 import torchvision.datasets as dset
 import torchvision.transforms as transforms
@@ -27,7 +26,8 @@ import torch.nn as nn
 from torch import optim
 import torch.nn.functional as F
 
-from . import _torchwordemb
+
+#from . import _torchwordemb
 
 
 # ## Helper functions
@@ -36,17 +36,17 @@ from . import _torchwordemb
 # In[ ]:
 
 # def imshow(img,text,should_save=False):
-    npimg = img.numpy()
-    plt.axis("off")
-    if text:
-        plt.text(75, 8, text, style='italic',fontweight='bold',
-            bbox={'facecolor':'white', 'alpha':0.8, 'pad':10})
-    plt.imshow(np.transpose(npimg, (1, 2, 0)))
-    plt.show()    
+#     npimg = img.numpy()
+#     plt.axis("off")
+#     if text:
+#         plt.text(75, 8, text, style='italic',fontweight='bold',
+#             bbox={'facecolor':'white', 'alpha':0.8, 'pad':10})
+#     plt.imshow(np.transpose(npimg, (1, 2, 0)))
+#     plt.show()    
 
-def show_plot(iteration,loss):
-    plt.plot(iteration,loss)
-    plt.show()
+# def show_plot(iteration,loss):
+#     plt.plot(iteration,loss)
+#     plt.show()
 
 
 # ## Configuration Class
@@ -55,8 +55,10 @@ def show_plot(iteration,loss):
 # In[15]:
 
 class Config():
-    training_dir = "./training_dir/"
-    testing_dir = "./data/faces/testing/"
+    #training_dir = "./training_dir/"
+    #testing_dir = "./data/faces/testing/"
+    training_dir = "./training_dir/training_input-LabelDocidEmbedding.txt"
+    testing_dir = "./testing_dir/test_input-LabelDocidEmbedding.txt"
     train_batch_size = 64
     train_number_epochs = 100
 
@@ -73,13 +75,12 @@ class Tuple:
 
 class SiameseNetworkDataset(Dataset):
     
-    def __init__(self,DatasetFolder,transform=None,should_invert=True):
+    def __init__(self,DatasetFolder):
         self.DatasetFolder = DatasetFolder    
-        self.transform = transform
-        self.should_invert = should_invert
+        
         
     def __getitem__(self,index):
-        with open(DatasetFolder, "r") as fp:
+        with open(self.DatasetFolder, "r") as fp:
             embedding_vectors = {}
             for line in fp:
                 line = line.strip() #To remove '\n'
@@ -91,17 +92,18 @@ class SiameseNetworkDataset(Dataset):
                 vector = map(float, vector)
                 embedding_vectors[tuple] = np.array(vector)        
 
-        doc0_tuple = random.choice(list(embedding_vectors.keys())
+        doc0_tuple = random.choice(list(embedding_vectors.keys()))
         #we need to make sure approx 50% of images are in the same class
-        should_get_same_class = random.randint(0,1) 
+        #should_get_same_class = random.randint(0.0,1.0) 
+        should_get_same_class = random.uniform(0.,1.0)
         if should_get_same_class:
             while True:
                 #keep looping till the same class image is found
-                doc1_tuple = random.choice(list(embedding_vectors.keys()) 
+                doc1_tuple = random.choice(list(embedding_vectors.keys()))
                 if doc0_tuple.rel_label==doc1_tuple.rel_label:
                     break
         else:
-            doc1_tuple = random.choice(list(embedding_vectors.keys())
+            doc1_tuple = random.choice(list(embedding_vectors.keys()))
 
 
         doc0 = embedding_vectors[doc0_tuple] 
@@ -124,23 +126,19 @@ class SiameseNetworkDataset(Dataset):
         return doc0, doc1 , torch.from_numpy(np.array([int(doc1_tuple.rel_label!=doc0_tuple.rel_label)],dtype=np.float32))
     
     def __len__(self):
-        return embedding_vectors.len()
+        return 300
 
 
 # ## Using Image Folder Dataset
 
 # In[5]:
 
-folder_dataset = dset.ImageFolder(root=Config.training_dir)
+folder_dataset = "./training_dir/training_input-LabelDocidEmbedding.txt" #dset.ImageFolder(root=Config.training_dir)
 
 
 # In[6]:
 
-siamese_dataset = SiameseNetworkDataset(imageFolderDataset=folder_dataset,
-                                        transform=transforms.Compose([transforms.Scale((100,100)),
-                                                                      transforms.ToTensor()
-                                                                      ])
-                                       ,should_invert=False)
+siamese_dataset = SiameseNetworkDataset(folder_dataset)
 
 
 # ## Visualising some of the data
@@ -171,23 +169,23 @@ class SiameseNetwork(nn.Module):
     def __init__(self):
         super(SiameseNetwork, self).__init__()
         self.cnn1 = nn.Sequential(
-            nn.ReflectionPad1d(1),
+            #nn.ReflectionPad2d(1),
             nn.Conv1d(1, 4, kernel_size=3),
             nn.ReLU(inplace=True),
             nn.BatchNorm1d(4),
-            nn.Dropout1d(p=.2),
+            nn.Dropout2d(p=.2),
             
-            nn.ReflectionPad1d(1),
+            #nn.ReflectionPad2d(1),
             nn.Conv1d(4, 8, kernel_size=3),
             nn.ReLU(inplace=True),
             nn.BatchNorm1d(8),
-            nn.Dropout1d(p=.2),
+            nn.Dropout2d(p=.2),
 
-            nn.ReflectionPad1d(1),
+            #nn.ReflectionPad2d(1),
             nn.Conv1d(8, 8, kernel_size=3),
             nn.ReLU(inplace=True),
             nn.BatchNorm1d(8),
-            nn.Dropout1d(p=.2),
+            nn.Dropout2d(p=.2),
         )
 
         self.fc1 = nn.Sequential(
@@ -246,7 +244,7 @@ train_dataloader = DataLoader(siamese_dataset,
 
 # In[11]:
 
-net = SiameseNetwork().cuda()
+net = SiameseNetwork() #.cuda()
 criterion = ContrastiveLoss()
 optimizer = optim.Adam(net.parameters(),lr = 0.0005 )
 
@@ -263,7 +261,7 @@ iteration_number= 0
 for epoch in range(0,Config.train_number_epochs):
     for i, data in enumerate(train_dataloader,0):
         img0, img1 , label = data
-        img0, img1 , label = Variable(img0).cuda(), Variable(img1).cuda() , Variable(label).cuda()
+        img0, img1 , label = Variable(img0), Variable(img1) , Variable(label)
         output1,output2 = net(img0,img1)
         optimizer.zero_grad()
         loss_contrastive = criterion(output1,output2,label)
@@ -282,12 +280,8 @@ show_plot(counter,loss_history)
 
 # In[96]:
 
-folder_dataset_test = dset.ImageFolder(root=Config.testing_dir)
-siamese_dataset = SiameseNetworkDataset(imageFolderDataset=folder_dataset_test,
-                                        transform=transforms.Compose([transforms.Scale((100,100)),
-                                                                      transforms.ToTensor()
-                                                                      ])
-                                       ,should_invert=False)
+folder_dataset_test = "./testing_dir/test_input-LabelDocidEmbedding.txt" #dset.ImageFolder(root=Config.testing_dir)
+siamese_dataset = SiameseNetworkDataset(folder_dataset_test)
 
 test_dataloader = DataLoader(siamese_dataset,num_workers=6,batch_size=1,shuffle=True)
 dataiter = iter(test_dataloader)
@@ -297,7 +291,7 @@ for i in range(10):
     _,x1,label2 = next(dataiter)
     concatenated = torch.cat((x0,x1),0)
     
-    output1,output2 = net(Variable(x0).cuda(),Variable(x1).cuda())
+    output1,output2 = net(Variable(x0),Variable(x1))
     euclidean_distance = F.pairwise_distance(output1, output2)
     imshow(torchvision.utils.make_grid(concatenated),'Dissimilarity: {:.2f}'.format(euclidean_distance.cpu().data.numpy()[0][0]))
 
