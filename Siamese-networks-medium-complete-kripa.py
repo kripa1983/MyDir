@@ -123,7 +123,9 @@ class SiameseNetworkDataset(Dataset):
         #    img1 = self.transform(img1)
         
         #return img0, img1 , torch.from_numpy(np.array([int(img1_tuple[1]!=img0_tuple[1])],dtype=np.float32))
-        return doc0, doc1 , torch.from_numpy(np.array([int(doc1_tuple.rel_label!=doc0_tuple.rel_label)],dtype=np.float32))
+        doc0 = np.expand_dims(doc0, axis=0)
+        doc1 = np.expand_dims(doc1, axis=0)
+        return doc0, doc1, torch.from_numpy(np.array([int(doc1_tuple.rel_label!=doc0_tuple.rel_label)],dtype=np.float32))
     
     def __len__(self):
         return 300
