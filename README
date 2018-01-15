@@ -1,1 +1,5 @@
 This is a folder containing all the program files for running Siamese network on query-wise LTR application.
+
+Before running: Unzip the two .zip files.
+
+To run: python Siamese-networks-medium-complete-kripa.py
