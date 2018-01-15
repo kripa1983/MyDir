@@ -247,6 +247,7 @@ train_dataloader = DataLoader(siamese_dataset,
 # In[11]:
 
 net = SiameseNetwork() #.cuda()
+net.double()
 criterion = ContrastiveLoss()
 optimizer = optim.Adam(net.parameters(),lr = 0.0005 )
 
@@ -263,7 +264,7 @@ iteration_number= 0
 for epoch in range(0,Config.train_number_epochs):
     for i, data in enumerate(train_dataloader,0):
         img0, img1 , label = data
-        img0, img1 , label = Variable(img0), Variable(img1) , Variable(label)
+        img0, img1 , label = Variable(img0).double(), Variable(img1).double() , Variable(label)
         output1,output2 = net(img0,img1)
         optimizer.zero_grad()
         loss_contrastive = criterion(output1,output2,label)
